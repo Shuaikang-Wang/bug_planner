@@ -2,3 +2,6 @@
 This repo is the bug algorithm implemented in python.
 
 run bug.py
+
+
+![image](/result)

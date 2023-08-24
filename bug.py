@@ -324,13 +324,11 @@ class BugPlanner(object):
                 self.find_nearest_corner()
                 while self.distance(self.current_start_point, self.nearest_rect_corner) > 1e-6:
                     # print("distance", self.distance(self.current_start_point, self.nearest_rect_corner))
-                    # print(intersection)
                     self.one_step_along_rect()
                     # print("nearest_rect_corner", self.nearest_rect_corner)
                     # print("current_start_point", self.current_start_point)
                     # print("intersection", intersection)
                     # print("intersection_points", _)
-                    # print(self.current_start_point)
 
     def plot_rectangulars(self, ax):
 
@@ -356,7 +354,7 @@ obstacle_list = [[np.array([2.0, 2.0]), 1.0, 1.0],
                  [np.array([4.0, 4.0]), 2.0, 2.0],
                  [np.array([7.0, 7.0]), 1.0, 1.0]]
 
-start_point = np.array([1.3, 2.3])
+start_point = np.array([1.0, 1.0])
 end_point = np.array([9.0, 9.0])
 
 step_size = 0.2

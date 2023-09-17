@@ -7,4 +7,4 @@ run bug_2D.py
 
 run bug_3D.py
 
-![image](./result/2D.png)
+![image](./result/3D.png)

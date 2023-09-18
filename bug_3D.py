@@ -291,7 +291,7 @@ class BugPlanner(object):
         distance = np.linalg.norm(closest_point1 - closest_point2)
         return distance
 
-    def line_rectangle_intersection(self, line, rect):
+    def line_rectangle_intersection(self, line, rect, collision_with_line=True):
         start = line.start
         end = line.end
         box_center = rect.center
@@ -329,18 +329,19 @@ class BugPlanner(object):
         intersection_start = [start[i] + t_near * (end[i] - start[i]) for i in range(3)]
         intersection_end = [start[i] + t_far * (end[i] - start[i]) for i in range(3)]
 
-        # intersection = Intersection(intersection_start, rect)
-        # all_intersections.append(intersection)
-        #
-        # intersection = Intersection(intersection_end, rect)
-        # all_intersections.append(intersection)
-
-        if not self.check_point_in_rect_side(intersection_start, rect):
+        if collision_with_line:
             intersection = Intersection(intersection_start, rect)
             all_intersections.append(intersection)
-        if not self.check_point_in_rect_side(intersection_end, rect):
+
             intersection = Intersection(intersection_end, rect)
             all_intersections.append(intersection)
+        else:
+            if not self.check_point_in_rect_side(intersection_start, rect):
+                intersection = Intersection(intersection_start, rect)
+                all_intersections.append(intersection)
+            if not self.check_point_in_rect_side(intersection_end, rect):
+                intersection = Intersection(intersection_end, rect)
+                all_intersections.append(intersection)
 
         # print("all_intersections", all_intersections)
 
@@ -351,12 +352,12 @@ class BugPlanner(object):
 
     def check_line_all_obstacles_intersection(self, line):
         for rect_i in self.inflated_rects:
-            print("line", line.start, line.end)
+            # print("line", line.start, line.end)
             intersection, intersections = self.line_rectangle_intersection(line, rect_i)
             inside = rect_i.check_point_inside(line.start) or rect_i.check_point_inside(line.end)
-            if (intersection and not inside) or len(intersections) > 1:
-                # print("rect center", rect_i.center)
-                return True
+            # if (intersection and not inside) or len(intersections) > 1:
+            #     # print("rect center", rect_i.center)
+            #     return True
         return False
 
     def nearest_intersection(self):
@@ -513,12 +514,13 @@ class BugPlanner(object):
         while self.distance(self.current_start_point, self.goal_point) > self.step_size:
             # print(self.path[-1])
             self.nearest_intersection()
-            # print("min_intersection", self.min_intersection)
+            # print("min_intersection", self.min_intersection.point)
             if self.min_intersection is None:
                 self.step_toward_goal()
             else:
                 self.nearest_obstacle()
                 self.find_intersection_nearest_side()
+                print("self.nearest_rect_side_point", self.nearest_rect_side_point)
                 if self.nearest_rect_side_point is not None:
                     line = Line(self.current_start_point, self.nearest_rect_side_point)
                     if self.check_line_all_obstacles_intersection(line):
@@ -547,7 +549,7 @@ class BugPlanner(object):
                         # print(self.current_start_point)
                     self.one_step_along_rect()
                     line = Line(self.current_start_point, self.goal_point)
-                    intersection, _ = self.line_rectangle_intersection(line, self.min_obstacle)
+                    intersection, _ = self.line_rectangle_intersection(line, self.min_obstacle, collision_with_line=False)
         if self.distance(self.start_point, self.goal_point) < self.step_size:
             self.path.append(self.goal_point)
         self.smooth_path()
@@ -595,18 +597,18 @@ class BugPlanner(object):
 
 
 if __name__ == '__main__':
-    # obscacles
+    # obstacles
     # [center_x, center_y], width, height
     obstacle_list = [[np.array([50.0, 50.0, 50.0]), 40.0, 40.0, 40.0]]
 
-    start_point = np.array([1.0, 2.0, 3.0])
+    start_point = np.array([1.0, 1.0, 1.0])
 
     end_point = np.array([100.0, 100.0, 100.0])
 
     agent_start = [start_point]
     agent_end = [end_point]
 
-    step_size = 10.0
+    step_size = 20.0
     inflated_size = 10.0
 
     fig = plt.figure()

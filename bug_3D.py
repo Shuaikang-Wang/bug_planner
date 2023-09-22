@@ -390,7 +390,7 @@ class BugPlanner(object):
                 min_intersection_to_start = intersection_i
         self.min_intersection = min_intersection_to_start
         self.all_intersections = all_intersections
-        # print(self.min_intersection)
+        # print(self.min_intersection.point)
 
     def step_toward_intersection(self):
         intersection_to_start = self.min_intersection
@@ -437,6 +437,7 @@ class BugPlanner(object):
     def find_intersection_nearest_side(self):
         nearest_obstacle = self.min_obstacle
         nearest_intersection_point = self.min_intersection.point
+        print("nearest_intersection_point", nearest_intersection_point)
 
         distance_from_start_to_side = np.inf
         cost_to_go = np.inf
@@ -447,9 +448,13 @@ class BugPlanner(object):
             # print("corner_point", corner.corner)
             # print("corner_visited", corner.visited)
             side_line = side.side
+            # print(abs(nearest_intersection_point[0] - (side_line.start[0] + side_line.end[0]) / 2))
+            # print(abs(nearest_intersection_point[1] - (side_line.start[1] + side_line.end[1]) / 2))
+            # print(abs(nearest_intersection_point[2] - (side_line.start[2] + side_line.end[2]) / 2))
             if (abs(nearest_intersection_point[0] - (side_line.start[0] + side_line.end[0]) / 2) < 1e-3 or
                     abs(nearest_intersection_point[1] - (side_line.start[1] + side_line.end[1]) / 2) < 1e-3 or
-                    abs(nearest_intersection_point[1] - (side_line.start[2] + side_line.end[2]) / 2) < 1e-3):
+                    abs(nearest_intersection_point[2] - (side_line.start[2] + side_line.end[2]) / 2) < 1e-3):
+                print("==============")
                 point_on_line = side_line.min_point_on_line(nearest_intersection_point, self.goal_point)
                 if self.distance(nearest_intersection_point, point_on_line) + \
                         self.distance(point_on_line, self.goal_point) < cost_to_go:
@@ -622,11 +627,16 @@ class BugPlanner(object):
 if __name__ == '__main__':
     # obstacles
     # [center_x, center_y], width, height
-    obstacle_list = [[np.array([50.0, 50.0, 50.0]), 40.0, 40.0, 40.0]]
+    # obstacle_list = [[np.array([50.0, 50.0, 50.0]), 40.0, 40.0, 40.0]]
+    #
+    # start_point = np.array([1.0, 1.0, 1.0])
+    #
+    # end_point = np.array([100.0, 100.0, 100.0])
 
-    start_point = np.array([1.0, 1.0, 1.0])
-
-    end_point = np.array([100.0, 100.0, 100.0])
+    obstacle_list = [[[34.11408442756432, 41.32532296956421, 47.45755461148007], 58.48035476425731, 58.48035476425731,
+      58.48035476425731]]
+    start_point = [39.88830563080476, 35.60347722397378, 5.45291894732953]
+    end_point = [72.08097764140022, 93.35202697044586, 88.91675715288135]
 
     agent_start = [start_point]
     agent_end = [end_point]

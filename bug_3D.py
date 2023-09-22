@@ -232,6 +232,7 @@ class BugPlanner(object):
         self.nearest_rect_side_point = None
         self.distance_from_start_to_side = None
         self.nearest_rect_plane = None
+        self.all_intersections = None
 
         self.initialize_obstacle()
         # print(self.obstacles)
@@ -330,11 +331,15 @@ class BugPlanner(object):
         intersection_end = [start[i] + t_far * (end[i] - start[i]) for i in range(3)]
 
         if collision_with_line:
-            intersection = Intersection(intersection_start, rect)
-            all_intersections.append(intersection)
+            if self.distance(np.array(intersection_start), np.array(intersection_end)) < 1e-3:
+                intersection = Intersection(intersection_start, rect)
+                all_intersections.append(intersection)
+            else:
+                intersection = Intersection(intersection_start, rect)
+                all_intersections.append(intersection)
 
-            intersection = Intersection(intersection_end, rect)
-            all_intersections.append(intersection)
+                intersection = Intersection(intersection_end, rect)
+                all_intersections.append(intersection)
         else:
             if not self.check_point_in_rect_side(intersection_start, rect):
                 intersection = Intersection(intersection_start, rect)
@@ -376,7 +381,7 @@ class BugPlanner(object):
             self.min_intersection = None
             return
         min_distance_to_start = np.inf
-        min_intersection_to_start = self.current_start_point
+        min_intersection_to_start = None
 
         for intersection_i in all_intersections:
             distance_to_start = self.distance(intersection_i.point, self.current_start_point)
@@ -384,6 +389,7 @@ class BugPlanner(object):
                 min_distance_to_start = distance_to_start
                 min_intersection_to_start = intersection_i
         self.min_intersection = min_intersection_to_start
+        self.all_intersections = all_intersections
         # print(self.min_intersection)
 
     def step_toward_intersection(self):
@@ -490,6 +496,7 @@ class BugPlanner(object):
         for side in nearest_obstacle.sides:
             # print("nearest_rect_side", nearest_rect_side)
             if self.find_line_line_distance(nearest_rect_side.side, side.side) < 1e-3:
+                print("=================visited==============")
                 side.visited = True
         self.nearest_rect_side_point = nearest_point_on_line
         self.distance_from_start_to_side = distance_from_start_to_side
@@ -515,8 +522,15 @@ class BugPlanner(object):
             # print(self.path[-1])
             self.nearest_intersection()
             # print("min_intersection", self.min_intersection.point)
+            # print("len(self.all_intersections)", len(self.all_intersections))
+            if len(self.all_intersections) < 2:
+                # print("self.current_start_point", self.current_start_point)
+                # print("self.goal_point", self.goal_point)
+                self.step_toward_goal()
+                break
             if self.min_intersection is None:
                 self.step_toward_goal()
+                break
             else:
                 self.nearest_obstacle()
                 self.find_intersection_nearest_side()
@@ -527,15 +541,20 @@ class BugPlanner(object):
                         self.step_toward_intersection()
                     else:
                         self.step_toward_side()
-                        # print("============")
+                        print("============")
 
                 # self.step_toward_intersection()
 
                 line = Line(self.current_start_point, self.goal_point)
-                intersection, _ = self.line_rectangle_intersection(line, self.min_obstacle)
+                intersection, all_intersections = self.line_rectangle_intersection(line, self.min_obstacle)
                 # print(intersection)
                 # print(_)
-                while intersection:
+                if all_intersections is None:
+                    num_intersection = 0
+                else:
+                    num_intersection = len(all_intersections)
+                print("num_intersections", num_intersection)
+                while num_intersection > 1:
                     self.find_nearest_side()
                     # print(self.nearest_rect_corner)
                     while self.distance(self.current_start_point, self.nearest_rect_side_point) > self.step_size:
@@ -549,7 +568,11 @@ class BugPlanner(object):
                         # print(self.current_start_point)
                     self.one_step_along_rect()
                     line = Line(self.current_start_point, self.goal_point)
-                    intersection, _ = self.line_rectangle_intersection(line, self.min_obstacle, collision_with_line=False)
+                    intersection, all_intersections = self.line_rectangle_intersection(line, self.min_obstacle)
+                    if all_intersections is None:
+                        num_intersection = 0
+                    else:
+                        num_intersection = len(all_intersections)
         if self.distance(self.start_point, self.goal_point) < self.step_size:
             self.path.append(self.goal_point)
         self.smooth_path()

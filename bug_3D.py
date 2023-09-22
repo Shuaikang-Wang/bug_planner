@@ -454,7 +454,6 @@ class BugPlanner(object):
             if (abs(nearest_intersection_point[0] - (side_line.start[0] + side_line.end[0]) / 2) < 1e-3 or
                     abs(nearest_intersection_point[1] - (side_line.start[1] + side_line.end[1]) / 2) < 1e-3 or
                     abs(nearest_intersection_point[2] - (side_line.start[2] + side_line.end[2]) / 2) < 1e-3):
-                print("==============")
                 point_on_line = side_line.min_point_on_line(nearest_intersection_point, self.goal_point)
                 if self.distance(nearest_intersection_point, point_on_line) + \
                         self.distance(point_on_line, self.goal_point) < cost_to_go:
@@ -499,8 +498,10 @@ class BugPlanner(object):
                     # print("current_point", self.current_start_point)
                     # print("distance_from_start_to_corner", distance_from_start_to_corner)
         for side in nearest_obstacle.sides:
-            # print("nearest_rect_side", nearest_rect_side)
-            if self.find_line_line_distance(nearest_rect_side.side, side.side) < 1e-3:
+            if (self.distance(nearest_rect_side.side.start, side.side.start) < 1e-3 and
+                self.distance(nearest_rect_side.side.end, side.side.end) < 1e-3) or \
+                    (self.distance(nearest_rect_side.side.start, side.side.end) < 1e-3 and
+                     self.distance(nearest_rect_side.side.end, side.side.start) < 1e-3):
                 print("=================visited==============")
                 side.visited = True
         self.nearest_rect_side_point = nearest_point_on_line
@@ -528,12 +529,12 @@ class BugPlanner(object):
             self.nearest_intersection()
             # print("min_intersection", self.min_intersection.point)
             # print("len(self.all_intersections)", len(self.all_intersections))
+            if self.min_intersection is None:
+                self.step_toward_goal()
+                break
             if len(self.all_intersections) < 2:
                 # print("self.current_start_point", self.current_start_point)
                 # print("self.goal_point", self.goal_point)
-                self.step_toward_goal()
-                break
-            if self.min_intersection is None:
                 self.step_toward_goal()
                 break
             else:
@@ -567,7 +568,7 @@ class BugPlanner(object):
                         # print(intersection)
                         self.one_step_along_rect()
                         # print("nearest_rect_corner", self.nearest_rect_corner)
-                        # print("current_start_point", self.current_start_point)
+                        print("current_start_point", self.current_start_point)
                         # print("intersection", intersection)
                         # print("intersection_points", _)
                         # print(self.current_start_point)
@@ -633,16 +634,16 @@ if __name__ == '__main__':
     #
     # end_point = np.array([100.0, 100.0, 100.0])
 
-    obstacle_list = [[[34.11408442756432, 41.32532296956421, 47.45755461148007], 58.48035476425731, 58.48035476425731,
+    obstacle_list = [[[40.25124781788273, 64.79672616429036, 35.57535577182866], 58.48035476425731, 58.48035476425731,
       58.48035476425731]]
-    start_point = [39.88830563080476, 35.60347722397378, 5.45291894732953]
-    end_point = [72.08097764140022, 93.35202697044586, 88.91675715288135]
+    start_point = [93.42674992156752, 45.16909326402505, 9.814223980416328]
+    end_point = [49.880305769749484, 35.677304860133475, 74.16564287028308]
 
     agent_start = [start_point]
     agent_end = [end_point]
 
     step_size = 20.0
-    inflated_size = 10.0
+    inflated_size = 0.0
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
@@ -667,6 +668,8 @@ if __name__ == '__main__':
         time_end = time.time()
         total_time = time_end - time_start
         print(total_time)
+        # ax.plot(*start_point, 'r*')
+        # ax.plot(*end_point, 'go')
     bug_planner = BugPlanner(start_point, end_point, step_size, inflated_size, obstacle_list)
     bug_planner.plot_cubes(ax)
 

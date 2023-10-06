@@ -363,7 +363,7 @@ class BugPlanner(object):
             # if (intersection and not inside) or len(intersections) > 1:
             #     # print("rect center", rect_i.center)
             #     return True
-        return False
+        return True
 
     def nearest_intersection(self):
         all_intersections = []
@@ -587,7 +587,7 @@ class BugPlanner(object):
                         num_intersection = len(all_intersections)
         if self.distance(self.start_point, self.goal_point) < self.step_size:
             self.path.append(self.goal_point)
-        # self.smooth_path()
+        self.smooth_path()
 
     def smooth_path(self):
         final_path = self.path
@@ -655,7 +655,7 @@ if __name__ == '__main__':
     agent_end = [end_point]
 
     step_size = 5.0
-    inflated_size = 5.0
+    inflated_size = 8.0
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')

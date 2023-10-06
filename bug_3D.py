@@ -533,15 +533,18 @@ class BugPlanner(object):
             # print("min_intersection", self.min_intersection.point)
             # print("len(self.all_intersections)", len(self.all_intersections))
             if self.min_intersection is None:
+                print("min_intersection is None")
                 self.step_toward_goal()
                 break
             if len(self.all_intersections) < 2:
+                print("intersections < 2")
                 # print("self.current_start_point", self.current_start_point)
                 # print("self.goal_point", self.goal_point)
                 self.step_toward_goal()
                 break
             else:
                 self.nearest_obstacle()
+                print("nearest_obstacle center", self.min_obstacle.center)
                 self.find_intersection_nearest_side()
                 print("self.nearest_rect_side_point", self.nearest_rect_side_point)
                 if self.nearest_rect_side_point is not None:
@@ -584,7 +587,7 @@ class BugPlanner(object):
                         num_intersection = len(all_intersections)
         if self.distance(self.start_point, self.goal_point) < self.step_size:
             self.path.append(self.goal_point)
-        self.smooth_path()
+        # self.smooth_path()
 
     def smooth_path(self):
         final_path = self.path
@@ -621,7 +624,7 @@ class BugPlanner(object):
         ax.plot(self.path[0][0], self.path[0][1], self.path[0][2], 20.0, color='r', marker='*')
         ax.plot(self.path[-1][0], self.path[-1][1], self.path[-1][2], 20.0, color='orange', marker='o')
         for path_i in self.path:
-            print("path_i", path_i)
+            # print("path_i", path_i)
             path_x.append(path_i[0])
             path_y.append(path_i[1])
             path_z.append(path_i[2])
@@ -637,21 +640,28 @@ if __name__ == '__main__':
     #
     # end_point = np.array([100.0, 100.0, 100.0])
 
-    obstacle_list = [[[76.07204050153067, 14.48636311445935, 52.64399497481953], 27.144176165949062, 27.144176165949062, 27.144176165949062], [[39.47270738425606, 17.711644915368623, 40.67451448619413], 27.144176165949062, 27.144176165949062, 27.144176165949062], [[79.45931567437299, 70.15039744115563, 25.044679515281818], 27.144176165949062, 27.144176165949062, 27.144176165949062], [[49.81936433192792, 83.55105332810635, 61.152832160291155], 27.144176165949062, 27.144176165949062, 27.144176165949062], [[42.91123068654221, 64.2337433021045, 30.4999085717866], 27.144176165949062, 27.144176165949062, 27.144176165949062], [[18.82626628369667, 78.70532228498448, 68.56656136263216], 27.144176165949062, 27.144176165949062, 27.144176165949062], [[52.214812562075124, 51.60350766654207, 68.38864855536073], 27.144176165949062, 27.144176165949062, 27.144176165949062], [[85.42390564379853, 67.65445998113572, 77.88024202245967], 27.144176165949062, 27.144176165949062, 27.144176165949062], [[79.10064645272901, 30.42071131173447, 16.20321703095809], 27.144176165949062, 27.144176165949062, 27.144176165949062], [[15.335126406412417, 13.644417974722952, 77.83641309455784], 27.144176165949062, 27.144176165949062, 27.144176165949062]]
-    start_point = [53.97013548551563, 2.9599964397446845, 4.1082004233206]
-    end_point = [6.21550625201538, 87.91743873979382, 93.90220612837362]
+    obstacle_list = [
+        [[141.48373054471006, 146.55784005142408, 59.2967559003791], 43.088693800637664, 43.088693800637664,
+         43.088693800637664],
+        [[137.2441736890225, 82.65639648899777, 56.725557814217], 43.088693800637664, 43.088693800637664,
+         43.088693800637664]]
+    path = [[138.87044982, 130.37268943, 21.38206579]
+        , [136.78341471, 107.20074339, 81.26990471]
+        , [135.22400714, 52.57054689, 98.80219346]]
+    start_point = path[0]
+    end_point = path[2]
 
     agent_start = [start_point]
     agent_end = [end_point]
 
-    step_size = 1.0
-    inflated_size = 0.7
+    step_size = 5.0
+    inflated_size = 5.0
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
-    ax.set_xlim([0, 100])
-    ax.set_ylim([0, 100])
-    ax.set_zlim([0, 100])
+    ax.set_xlim([0, 200])
+    ax.set_ylim([0, 200])
+    ax.set_zlim([0, 200])
     ax.set_aspect('equal')
 
     for i, agent_start_i in enumerate(agent_start):

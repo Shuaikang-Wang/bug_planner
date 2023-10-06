@@ -270,7 +270,7 @@ class BugPlanner(object):
             # if (intersection and not inside) or len(intersections) > 1:
             #     print("rect center", rect_i.center)
             #     return True
-        return False
+        return True
 
     def nearest_intersection(self):
         all_intersections = []
@@ -417,11 +417,12 @@ class BugPlanner(object):
         while self.distance(self.current_start_point, self.goal_point) > self.step_size:
             # print(self.path[-1])
             self.nearest_intersection()
-            # print("min_intersection", self.min_intersection)
             if self.min_intersection is None:
                 self.step_toward_goal()
             else:
+                # print("min_intersection", self.min_intersection.point)
                 self.nearest_obstacle()
+                # print("min_obstacle_center", self.min_obstacle.center)
                 self.find_intersection_nearest_corner()
                 line = Line(self.current_start_point, self.nearest_rect_corner)
                 if self.check_line_all_obstacles_intersection(line):
@@ -511,35 +512,43 @@ class BugPlanner(object):
             path_y.append(path_i[1])
         ax.plot(path_x, path_y, '-g', linewidth=1.5)
 
+def obstacle_adapter(obstacle_list):
+    obstacle_list = [
+        [
+            [
+                ob[0]+ob[-1]/2,
+                ob[1]+ob[-1]/2
+            ],
+            ob[-1],
+            ob[-1]
+        ]
+        for ob in obstacle_list]
+    return obstacle_list
+
 
 if __name__ == '__main__':
     # obscacles
     # [center_x, center_y], width, height
-    obstacle_list = [[np.array([20.0, 20.0]), 10.0, 10.0],
-                     [np.array([40.0, 40.0]), 20.0, 20.0],
-                     [np.array([70.0, 70.0]), 10.0, 10.0]]
+    obstacle_list = [[[223.1614385518977, 193.60392428676852], 50.0, 50.0], [[89.20016593092528, 82.45811003256273], 50.0, 50.0],
+     [[64.55418822256267, 183.0988433861503], 50.0, 50.0], [[183.17594654411153, 82.03676336852558], 50.0, 50.0],
+     [[141.43565691766102, 167.3280620894149], 50.0, 50.0]]
 
-    start_point = np.array([4.873229445099659, 1.5969777481981196])
+    start_point = [214.9004439665877, 233.88056443304234]
 
-    end_point = np.array([0.873229445099659, 4.5969777481981196])
+    end_point = [189.90750992631965, 21.41688294597475]
 
-    agent_start = [(77.40459085448113, 97.6925422132548), (78.86434569252066, 92.44353828203033),
-                   (66.20679980890706, 85.61165056129137), (67.7517756288355, 96.53077987008162),
-                   (68.36233950255817, 25.06987315324649), (41.72413357777185, 16.94332670765216),
-                   (9.841618061357556, 53.4409321793724), (30.512086054424678, 1.4879614245067003),
-                   (96.32785777059202, 59.0348361920288), (89.77308130236506, 13.203804295232954)]
-    agent_end = [(12.422927264051033, 8.121958675287246), (75.85743273079159, 47.84232274704885),
-                 (19.34961145177644, 78.12345215159169), (14.779457744145816, 2.260018073337426),
-                 (96.17496513492746, 51.44283076062357), (20.98963092151416, 5.100546122041285),
-                 (40.27267022907046, 66.85502416103609), (95.90494867536484, 10.796985316676285),
-                 (99.24586076543194, 79.45238243939187), (11.580667792436259, 48.6246814609457)]
-    step_size = 2.0
-    inflated_size = 2.0
+    # obstacle_list = obstacle_adapter(obstacle_list)
+
+    agent_start = [start_point]
+    agent_end = [end_point]
+
+    step_size = 0.5
+    inflated_size = 4.0
 
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    ax.set_xlim([0, 100])
-    ax.set_ylim([0, 100])
+    ax.set_xlim([0, 300])
+    ax.set_ylim([0, 300])
     ax.set_aspect('equal')
 
     for i, agent_start_i in enumerate(agent_start):

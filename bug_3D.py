@@ -127,7 +127,8 @@ class Rectangular(object):
         else:
             return False
 
-    def plot_cube(self, ax, color='b', alpha=0.5):
+    # def plot_cube(self, ax, color='b', alpha=0.5):
+    def plot_cube(self, ax, color='b', alpha=0.05):
         phi = np.arange(1, 10, 2) * np.pi / 4
         Phi, Theta = np.meshgrid(phi, phi)
         x = np.cos(Phi) * np.sin(Theta)
@@ -440,7 +441,7 @@ class BugPlanner(object):
     def find_intersection_nearest_side(self):
         nearest_obstacle = self.min_obstacle
         nearest_intersection_point = self.min_intersection.point
-        print("nearest_intersection_point", nearest_intersection_point)
+        # print("nearest_intersection_point", nearest_intersection_point)
 
         distance_from_start_to_side = np.inf
         cost_to_go = np.inf
@@ -481,15 +482,22 @@ class BugPlanner(object):
         nearest_point_on_line = None
 
         # print("\n=============================")
+        # print("self.current_start_point", self.current_start_point)
         for side in nearest_obstacle.sides:
             # print("current_point", self.current_start_point)
             # print("corner_point", corner.corner)
             # print("corner_visited", corner.visited)
             side_line = side.side
-            if not side.visited and (abs(self.current_start_point[0] - (side_line.start[0] + side_line.end[0]) / 2) < 1e-3 or
-                                     abs(self.current_start_point[1] - (side_line.start[1] + side_line.end[1]) / 2) < 1e-3 or
-                                     abs(self.current_start_point[2] - (side_line.start[2] + side_line.end[2]) / 2) < 1e-3):
-                point_on_line = side_line.min_point_on_line(nearest_intersection_point, self.goal_point)
+            point_on_line = side_line.min_point_on_line(nearest_intersection_point, self.goal_point)
+            # if not side.visited and (
+            #         abs(self.current_start_point[0] - (side_line.start[0] + side_line.end[0]) / 2) < 1e-3 or
+            #         abs(self.current_start_point[1] - (side_line.start[1] + side_line.end[1]) / 2) < 1e-3 or
+            #         abs(self.current_start_point[2] - (side_line.start[2] + side_line.end[2]) / 2) < 1e-3):
+            if not side.visited and (
+                    abs(self.current_start_point[0] - point_on_line[0]) < 1e-3 or
+                    abs(self.current_start_point[1] - point_on_line[1]) < 1e-3 or
+                    abs(self.current_start_point[2] - point_on_line[2]) < 1e-3):
+                # point_on_line = side_line.min_point_on_line(nearest_intersection_point, self.goal_point)
                 if self.distance(self.current_start_point, point_on_line) + \
                         self.distance(point_on_line, self.goal_point) < cost_to_go:
                     nearest_rect_side = side
@@ -500,12 +508,13 @@ class BugPlanner(object):
                     # print("corner", corner.corner)
                     # print("current_point", self.current_start_point)
                     # print("distance_from_start_to_corner", distance_from_start_to_corner)
+        # print("point_on_line", point_on_line)
         for side in nearest_obstacle.sides:
             if (self.distance(nearest_rect_side.side.start, side.side.start) < 1e-3 and
                 self.distance(nearest_rect_side.side.end, side.side.end) < 1e-3) or \
                     (self.distance(nearest_rect_side.side.start, side.side.end) < 1e-3 and
                      self.distance(nearest_rect_side.side.end, side.side.start) < 1e-3):
-                print("=================visited==============")
+                # print("=================visited==============")
                 side.visited = True
         self.nearest_rect_side_point = nearest_point_on_line
         self.distance_from_start_to_side = distance_from_start_to_side
@@ -533,27 +542,27 @@ class BugPlanner(object):
             # print("min_intersection", self.min_intersection.point)
             # print("len(self.all_intersections)", len(self.all_intersections))
             if self.min_intersection is None:
-                print("min_intersection is None")
+                # print("min_intersection is None")
                 self.step_toward_goal()
                 break
             if len(self.all_intersections) < 2:
-                print("intersections < 2")
+                # print("intersections < 2")
                 # print("self.current_start_point", self.current_start_point)
                 # print("self.goal_point", self.goal_point)
                 self.step_toward_goal()
                 break
             else:
                 self.nearest_obstacle()
-                print("nearest_obstacle center", self.min_obstacle.center)
+                # print("nearest_obstacle center", self.min_obstacle.center)
                 self.find_intersection_nearest_side()
-                print("self.nearest_rect_side_point", self.nearest_rect_side_point)
+                # print("self.nearest_rect_side_point", self.nearest_rect_side_point)
                 if self.nearest_rect_side_point is not None:
                     line = Line(self.current_start_point, self.nearest_rect_side_point)
                     if self.check_line_all_obstacles_intersection(line):
                         self.step_toward_intersection()
                     else:
                         self.step_toward_side()
-                        print("============")
+                        # print("============")
 
                 # self.step_toward_intersection()
 
@@ -565,16 +574,16 @@ class BugPlanner(object):
                     num_intersection = 0
                 else:
                     num_intersection = len(all_intersections)
-                print("num_intersections", num_intersection)
+                # print("num_intersections", num_intersection)
                 while num_intersection > 1:
                     self.find_nearest_side()
-                    # print(self.nearest_rect_corner)
+                    # print("self.nearest_rect_side_point", self.nearest_rect_side_point)
                     while self.distance(self.current_start_point, self.nearest_rect_side_point) > self.step_size:
                         # print("distance", self.distance(self.current_start_point, self.nearest_rect_corner))
                         # print(intersection)
                         self.one_step_along_rect()
                         # print("nearest_rect_corner", self.nearest_rect_corner)
-                        print("current_start_point", self.current_start_point)
+                        # print("current_start_point", self.current_start_point)
                         # print("intersection", intersection)
                         # print("intersection_points", _)
                         # print(self.current_start_point)
@@ -608,27 +617,43 @@ class BugPlanner(object):
 
     def plot_cubes(self, ax):
         for rect_i in self.inflated_rects[0: len(self.obstacle_list)]:
-            rect_i.plot_cube(ax, color='b', alpha=0.2)
+            # rect_i.plot_cube(ax, color='b', alpha=0.2)
+            rect_i.plot_cube(ax, color='b', alpha=0.02)
 
             origin_center_i = [rect_i.center[0], rect_i.center[1], rect_i.center[2]]
             origin_length_i = rect_i.length - 2 * self.inflated_size
             origin_width_i = rect_i.width - 2 * self.inflated_size
             origin_height_i = rect_i.height - 2 * self.inflated_size
             origin_rect_i = Rectangular(origin_center_i, origin_length_i, origin_width_i, origin_height_i)
-            origin_rect_i.plot_cube(ax, color='b', alpha=0.5)
+            # origin_rect_i.plot_cube(ax, color='b', alpha=0.5)
+            origin_rect_i.plot_cube(ax, color='b', alpha=0.05)
 
     def plot_path(self, ax):
         path_x = []
         path_y = []
         path_z = []
-        ax.plot(self.path[0][0], self.path[0][1], self.path[0][2], 20.0, color='r', marker='*')
-        ax.plot(self.path[-1][0], self.path[-1][1], self.path[-1][2], 20.0, color='orange', marker='o')
         for path_i in self.path:
             # print("path_i", path_i)
             path_x.append(path_i[0])
             path_y.append(path_i[1])
             path_z.append(path_i[2])
         ax.plot(path_x, path_y, path_z, '-k', linewidth=1.5)
+
+
+def obstacle_adapter(obstacle_list):
+    obstacle_list = [
+        [
+            [
+                ob[0] + ob[-1] / 2,
+                ob[1] + ob[-1] / 2,
+                ob[2] + ob[-1] / 2,
+            ],
+            ob[-1],
+            ob[-1],
+            ob[-1],
+        ]
+        for ob in obstacle_list]
+    return obstacle_list
 
 
 if __name__ == '__main__':
@@ -640,22 +665,97 @@ if __name__ == '__main__':
     #
     # end_point = np.array([100.0, 100.0, 100.0])
 
-    obstacle_list = [
-        [[141.48373054471006, 146.55784005142408, 59.2967559003791], 43.088693800637664, 43.088693800637664,
-         43.088693800637664],
-        [[137.2441736890225, 82.65639648899777, 56.725557814217], 43.088693800637664, 43.088693800637664,
-         43.088693800637664]]
-    path = [[138.87044982, 130.37268943, 21.38206579]
-        , [136.78341471, 107.20074339, 81.26990471]
-        , [135.22400714, 52.57054689, 98.80219346]]
-    start_point = path[0]
-    end_point = path[2]
+    # obstacle_list = [
+    #     [[141.48373054471006, 146.55784005142408, 59.2967559003791], 43.088693800637664, 43.088693800637664,
+    #      43.088693800637664],
+    #     [[137.2441736890225, 82.65639648899777, 56.725557814217], 43.088693800637664, 43.088693800637664,
+    #      43.088693800637664]
+    #     ]
+    #     obstacle_list=[[[91.1010938167906, 151.0789592228769, 86.08340591097476], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[135.2891128142748, 79.2877529763728, 91.47299758388668], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[173.5323891782093, 44.63668555537053, 162.61653155051994], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[23.652798969884124, 160.95417060385526, 138.60276777985337], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[57.42497281437761, 57.554185976735255, 91.73868526229646], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[50.83915556322631, 94.86296418308638, 150.25633586084282], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[168.9764186348353, 158.19411803676306, 166.7437658527735], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[80.76263603109288, 53.5075181119653, 31.84622032247669], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[163.7416515229149, 135.24954096248746, 72.46097609101547], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[96.31466725220228, 154.32181956559546, 169.5159291020757], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[118.16594180394186, 82.1084997124477, 147.0266557733895], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[97.98243304201627, 170.87840890244382, 27.008177381778808], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[34.2557287954926, 26.270482109634088, 160.62283962079533], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[33.12826195083585, 134.8325831041646, 43.62784998317042], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[167.78671142417843, 40.54225740301587, 24.560964154205593], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[173.94801650250471, 21.593026753462944, 82.61525311049623], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[21.82442886043523, 55.592288700681564, 35.20574099152768], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[93.58868408728603, 26.38280648364173, 155.44272583442415], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[107.70506744156137, 109.84661025910486, 25.843565299322243], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[117.93804201138343, 22.281367762442382, 97.05562443349318], 43.088693800637664, 43.088693800637664, 43.088693800637664]]
 
+    #     path = [[138.87044982,130.37268943,21.38206579]
+    # ,[136.78341471,107.20074339,81.26990471]
+    # ,[135.22400714,52.57054689,98.80219346]]
+    #     start_point = path[0]
+    #     end_point = path[2]
+
+    #     agent_start = [start_point]
+    #     agent_end = [end_point]
+    # obstacle_list  = [[[91.1010938167906, 151.0789592228769, 86.08340591097476], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[135.2891128142748, 79.2877529763728, 91.47299758388668], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[173.5323891782093, 44.63668555537053, 162.61653155051994], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[23.652798969884124, 160.95417060385526, 138.60276777985337], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[57.42497281437761, 57.554185976735255, 91.73868526229646], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[50.83915556322631, 94.86296418308638, 150.25633586084282], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[168.9764186348353, 158.19411803676306, 166.7437658527735], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[80.76263603109288, 53.5075181119653, 31.84622032247669], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[163.7416515229149, 135.24954096248746, 72.46097609101547], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[96.31466725220228, 154.32181956559546, 169.5159291020757], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[118.16594180394186, 82.1084997124477, 147.0266557733895], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[97.98243304201627, 170.87840890244382, 27.008177381778808], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[34.2557287954926, 26.270482109634088, 160.62283962079533], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[33.12826195083585, 134.8325831041646, 43.62784998317042], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[167.78671142417843, 40.54225740301587, 24.560964154205593], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[173.94801650250471, 21.593026753462944, 82.61525311049623], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[21.82442886043523, 55.592288700681564, 35.20574099152768], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[93.58868408728603, 26.38280648364173, 155.44272583442415], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[107.70506744156137, 109.84661025910486, 25.843565299322243], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[117.93804201138343, 22.281367762442382, 97.05562443349318], 43.088693800637664, 43.088693800637664, 43.088693800637664]]
+    # start_point    = [169.5660706245593, 42.19868941825102, 126.5607928062335]
+    # end_point      = [140.23561876825414, 22.92378200868626, 35.22700017229256]
+    # obstacle_list  = [[[57.45655634249066, 123.10847131127363, 38.66631841141745], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[101.2840141170797, 73.52053122209, 105.38707892112028], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[167.87482715638524, 31.267841169372296, 177.23332814466355], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[26.1108108952177, 23.529291075567805, 116.36729150353237], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[108.24273552218702, 168.06528875337176, 101.49413287082005], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[81.57153676771192, 57.5072464579945, 37.04246964638349], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[170.36007682005248, 162.20367719070552, 48.47346055691678], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[147.69084884637533, 168.7979227135558, 172.7495418054965], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[95.258337018351, 89.68578979799268, 171.51435098075052], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[36.18051868050385, 87.61905852298253, 168.95889626133823], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[176.23663385548866, 50.17696860021681, 66.86973162672786], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[30.77567091410083, 152.71055169574493, 147.0738471074391], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[163.71514432348866, 104.57373656382956, 158.63744785694263], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[91.72707179305992, 177.82232240238085, 160.34589689895216], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[168.64246211040899, 161.97702270457117, 113.24633600730408], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[25.013906064696883, 23.00286455457447, 41.242630902166965], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[37.43672574741474, 93.81889141428869, 96.06588943271004], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[114.1077458106423, 156.79408799586412, 23.219259299107776], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[27.62293449371972, 178.20541379947267, 33.292374431148275], 43.088693800637664, 43.088693800637664, 43.088693800637664], [[170.79942554185325, 106.64611515241407, 22.312008896489427], 43.088693800637664, 43.088693800637664, 43.088693800637664]]
+    # start_point    = [144.08043064681382, 183.1402207422691, 34.04406197356165]
+    # end_point      = [125.3867096234803, 6.122766418403282, 156.45990529121053]
+    obstacle_list = [
+        [[136.90321135971865, 103.7409111509183, 33.467157544968714],
+         47.425244059867495, 47.425244059867495, 47.425244059867495],
+        [[51.03130516097224, 93.1029516790268, 162.41304774035635], 47.425244059867495, 47.425244059867495,
+         47.425244059867495],
+        [[171.11597754095536, 148.37427994689713, 103.60512018410728], 47.425244059867495, 47.425244059867495,
+         47.425244059867495],
+        [[61.67067938738376, 41.95425941327129, 88.17425009930668], 47.425244059867495, 47.425244059867495,
+         47.425244059867495],
+        [[171.62434117619506, 32.63469955095063, 88.39295445862425], 47.425244059867495, 47.425244059867495,
+         47.425244059867495],
+        [[97.00177089277886, 166.928179567834, 57.287532263613414], 47.425244059867495, 47.425244059867495,
+         47.425244059867495],
+        [[103.08692296044848, 168.7450503596725, 147.13184931648127], 47.425244059867495, 47.425244059867495,
+         47.425244059867495],
+        [[40.62603614579494, 26.197525781239726, 164.42320334126663], 47.425244059867495, 47.425244059867495,
+         47.425244059867495],
+        [[121.1391699202253, 37.85967345106205, 165.9833946601597], 47.425244059867495, 47.425244059867495,
+         47.425244059867495],
+        [[25.031523208625153, 166.77014903922358, 66.6495275686932], 47.425244059867495, 47.425244059867495,
+         47.425244059867495],
+        [[36.068586243863734, 167.18942579246092, 158.92929340632188], 47.425244059867495, 47.425244059867495,
+         47.425244059867495],
+        [[169.09532438883093, 175.05549381441247, 167.5702441316549], 47.425244059867495, 47.425244059867495,
+         47.425244059867495],
+        [[173.03225293773164, 105.28749720267533, 171.79604489584938], 47.425244059867495, 47.425244059867495,
+         47.425244059867495],
+        [[112.23333405124836, 30.79437569370776, 25.209624226275217], 47.425244059867495, 47.425244059867495,
+         47.425244059867495],
+        [[45.424268151495355, 32.46869447169, 25.549726587997252], 47.425244059867495, 47.425244059867495,
+         47.425244059867495]]
+    start_point = [80.51281706004995, 165.9302437112153, 176.32096510189072]
+    end_point = [20.46175513947782, 35.333952441221776, 132.31281878503614]
     agent_start = [start_point]
     agent_end = [end_point]
 
     step_size = 5.0
-    inflated_size = 8.0
+    inflated_size = 4.0
+
+    # TODO： 写一个过滤障碍物的，  还没完成
+    obstacle_list = [
+        ob
+        for ob in obstacle_list
+        if (
+                np.all(np.array(ob[0]) - np.array(ob[1:]) / 2 < np.max([start_point, end_point], axis=0))
+                and
+                np.all(np.array(ob[0]) + np.array(ob[1:]) / 2 > np.min([start_point, end_point], axis=0))
+        )
+    ]
+    inflate_obs_min_max = [
+        (np.array(ob[0]) - np.array(ob[1:]) / 2 - inflated_size,
+         np.array(ob[0]) + np.array(ob[1:]) / 2 + inflated_size
+         )
+        for ob in obstacle_list
+    ]
+    for minp, maxp in inflate_obs_min_max:
+        if np.all(minp < start_point) and np.all(start_point < maxp):
+            print('start_point')
+            print(start_point)
+            print('minp,maxp')
+            print(minp)
+            print(maxp)
+        if np.all(minp < end_point) and np.all(end_point < maxp):
+            print('start_point')
+            print(end_point)
+            print('minp,maxp')
+            print(minp)
+            print(maxp)
+    # exit()
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')

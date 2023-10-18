@@ -452,7 +452,7 @@ class BugPlanner(object):
                     self.one_step_along_rect()
                     line = Line(self.current_start_point, self.goal_point)
                     intersection, _ = self.line_rectangle_intersection(line, self.min_obstacle)
-        if self.distance(self.start_point, self.goal_point) < self.step_size:
+        if self.distance(self.current_start_point, self.goal_point) < self.step_size:
             self.path.append(self.goal_point)
         self.smooth_path()
 
@@ -529,21 +529,15 @@ def obstacle_adapter(obstacle_list):
 if __name__ == '__main__':
     # obscacles
     # [center_x, center_y], width, height
-    obstacle_list = [[[223.1614385518977, 193.60392428676852], 50.0, 50.0], [[89.20016593092528, 82.45811003256273], 50.0, 50.0],
-     [[64.55418822256267, 183.0988433861503], 50.0, 50.0], [[183.17594654411153, 82.03676336852558], 50.0, 50.0],
-     [[141.43565691766102, 167.3280620894149], 50.0, 50.0]]
-
-    start_point = [214.9004439665877, 233.88056443304234]
-
-    end_point = [189.90750992631965, 21.41688294597475]
+    obstacle_list = [[[150.55043997342133, 226.296966084244], 48.34659492268814, 48.34659492268814], [[213.00858564398823, 93.75685920774484], 48.34659492268814, 48.34659492268814], [[71.70408592537288, 71.80666360971782], 48.34659492268814, 48.34659492268814], [[67.7165244276707, 231.34467715210315], 48.34659492268814, 48.34659492268814], [[229.4870299629942, 214.53627468132373], 48.34659492268814, 48.34659492268814], [[73.35957252928269, 154.35793135786946], 48.34659492268814, 48.34659492268814]]
 
     # obstacle_list = obstacle_adapter(obstacle_list)
 
-    agent_start = [start_point]
-    agent_end = [end_point]
+    agent_start = [[60.0, 0.0], [120.0, 0.0], [180.0, 0.0], [240.0, 0.0]]
+    agent_end = [[60.0, 300.0], [120.0, 300.0], [180.0, 300.0], [240.0, 300.0]]
 
-    step_size = 0.5
-    inflated_size = 4.0
+    step_size = 20.0
+    inflated_size = 11.7
 
     fig = plt.figure()
     ax = fig.add_subplot(111)
@@ -566,8 +560,9 @@ if __name__ == '__main__':
         bug_planner.plot_path(ax)
         time_end = time.time()
         total_time = time_end - time_start
+        print(final_path)
         # print(total_time)
-    bug_planner = BugPlanner(start_point, end_point, step_size, inflated_size, obstacle_list)
+    bug_planner = BugPlanner(agent_start[0], agent_end[0], step_size, inflated_size, obstacle_list)
     bug_planner.plot_rectangulars(ax)
 
     plt.show()

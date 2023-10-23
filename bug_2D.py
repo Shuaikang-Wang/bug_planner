@@ -452,7 +452,7 @@ class BugPlanner(object):
                     self.one_step_along_rect()
                     line = Line(self.current_start_point, self.goal_point)
                     intersection, _ = self.line_rectangle_intersection(line, self.min_obstacle)
-        if self.distance(self.current_start_point, self.goal_point) < self.step_size:
+        if self.distance(self.current_start_point, self.goal_point) <= self.step_size:
             self.path.append(self.goal_point)
         self.smooth_path()
 
@@ -531,12 +531,13 @@ if __name__ == '__main__':
     # [center_x, center_y], width, height
     obstacle_list = [[[150.55043997342133, 226.296966084244], 48.34659492268814, 48.34659492268814], [[213.00858564398823, 93.75685920774484], 48.34659492268814, 48.34659492268814], [[71.70408592537288, 71.80666360971782], 48.34659492268814, 48.34659492268814], [[67.7165244276707, 231.34467715210315], 48.34659492268814, 48.34659492268814], [[229.4870299629942, 214.53627468132373], 48.34659492268814, 48.34659492268814], [[73.35957252928269, 154.35793135786946], 48.34659492268814, 48.34659492268814]]
 
+    obstacle_list = []
     # obstacle_list = obstacle_adapter(obstacle_list)
 
     agent_start = [[60.0, 0.0], [120.0, 0.0], [180.0, 0.0], [240.0, 0.0]]
     agent_end = [[60.0, 300.0], [120.0, 300.0], [180.0, 300.0], [240.0, 300.0]]
 
-    step_size = 20.0
+    step_size = 300.0
     inflated_size = 11.7
 
     fig = plt.figure()

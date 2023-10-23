@@ -599,7 +599,7 @@ class BugPlanner(object):
                         num_intersection = 0
                     else:
                         num_intersection = len(all_intersections)
-        if self.distance(self.current_start_point, self.goal_point) < self.step_size:
+        if self.distance(self.current_start_point, self.goal_point) <= self.step_size:
             self.path.append(self.goal_point)
         self.smooth_path()
 
@@ -682,6 +682,7 @@ if __name__ == '__main__':
                       67.86044041487264],
                      [[109.91603147470089, 213.09357973510592, 116.4551904814625], 67.86044041487264, 67.86044041487264,
                       67.86044041487264]]
+    obstacle_list = []
     start_point = [98.76263315158776, 226.76493024717868, 232.5046649732856]
     end_point = [79.8738467455632, 41.06370147581048, 220.00437099434905]
     agent_start = [start_point]

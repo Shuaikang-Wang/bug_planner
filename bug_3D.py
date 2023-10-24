@@ -32,6 +32,7 @@ class Rectangular(object):
         self._height = height
         self._s = 1.0
         self.sides = []
+        self.vertices = []
 
         self.initialize_sides()
 
@@ -40,16 +41,16 @@ class Rectangular(object):
         half_width = self.width / 2
         half_height = self.height / 2
 
-        vertices = [
-            (self.center[0] + half_length, self.center[1] + half_width, self.center[2] + half_height),
-            (self.center[0] + half_length, self.center[1] + half_width, self.center[2] - half_height),
-            (self.center[0] + half_length, self.center[1] - half_width, self.center[2] + half_height),
-            (self.center[0] + half_length, self.center[1] - half_width, self.center[2] - half_height),
-            (self.center[0] - half_length, self.center[1] + half_width, self.center[2] + half_height),
-            (self.center[0] - half_length, self.center[1] + half_width, self.center[2] - half_height),
-            (self.center[0] - half_length, self.center[1] - half_width, self.center[2] + half_height),
-            (self.center[0] - half_length, self.center[1] - half_width, self.center[2] - half_height)
-        ]
+        vertices = np.array([
+            np.array([self.center[0] + half_length, self.center[1] + half_width, self.center[2] + half_height]),
+            np.array([self.center[0] + half_length, self.center[1] + half_width, self.center[2] - half_height]),
+            np.array([self.center[0] + half_length, self.center[1] - half_width, self.center[2] + half_height]),
+            np.array([self.center[0] + half_length, self.center[1] - half_width, self.center[2] - half_height]),
+            np.array([self.center[0] - half_length, self.center[1] + half_width, self.center[2] + half_height]),
+            np.array([self.center[0] - half_length, self.center[1] + half_width, self.center[2] - half_height]),
+            np.array([self.center[0] - half_length, self.center[1] - half_width, self.center[2] + half_height]),
+            np.array([self.center[0] - half_length, self.center[1] - half_width, self.center[2] - half_height])
+        ])
 
         edges = [
             [vertices[0], vertices[1]],
@@ -66,6 +67,7 @@ class Rectangular(object):
             [vertices[6], vertices[7]]
         ]
 
+        self.vertices = vertices
         sides = []
         for edge_i in edges:
             line_i = Line(edge_i[0], edge_i[1])
@@ -246,6 +248,47 @@ class BugPlanner(object):
             height_i = obs_data_i[3] + 2 * self.inflated_size
             obs_i = Rectangular(center_i, length_i, width_i, height_i)
             self.inflated_rects.append(obs_i)
+
+    def find_nearest_sides(self, point, rectangular):
+        distances = np.linalg.norm(rectangular.vertices - point, axis=1)
+
+        closest_indices = np.argsort(distances)[:4]
+
+        closest_vertices = [rectangular.vertices[i] for i in closest_indices[0:4]]
+
+        lines = []
+        for i in range(0, len(closest_vertices)):
+            for j in range(i, len(closest_vertices)):
+                if i == j:
+                    continue
+                # print("self.current_point", self.current_start_point)
+                # print((closest_vertices[i], closest_vertices[j]))
+                # print("dista", self.distance(closest_vertices[i], closest_vertices[j]))
+                # print("width", self.distance(rectangular.sides[0].side.start, rectangular.sides[0].side.end))
+                if abs(self.distance(closest_vertices[i], closest_vertices[j]) - self.distance(rectangular.sides[0].side.start, rectangular.sides[0].side.end)) < 1e-3:
+                    lines.append(Line(closest_vertices[i], closest_vertices[j]))
+
+        # print("lines", lines)
+
+        nearest_sides = []
+
+        # lines = [
+        #     Line(rectangular.vertices[closest_indices[0]], rectangular.vertices[closest_indices[1]]),
+        #     Line(rectangular.vertices[closest_indices[1]], rectangular.vertices[closest_indices[2]]),
+        #     Line(rectangular.vertices[closest_indices[2]], rectangular.vertices[closest_indices[3]]),
+        #     Line(rectangular.vertices[closest_indices[3]], rectangular.vertices[closest_indices[0]])
+        # ]
+
+        # print(rectangular.sides)
+        for line in lines:
+            for side in rectangular.sides:
+                if (self.distance(line.start, side.side.start) < 1e-3 and
+                    self.distance(line.end, side.side.end) < 1e-3) or \
+                    (self.distance(line.start, side.side.end) < 1e-3 and
+                     self.distance(line.end, side.side.start) < 1e-3):
+                    # print("!!!")
+                    nearest_sides.append(side)
+        return nearest_sides
 
     @staticmethod
     def distance(point_1, point_2):
@@ -446,25 +489,37 @@ class BugPlanner(object):
         distance_from_start_to_side = np.inf
         cost_to_go = np.inf
         nearest_point_on_line = None
-
+        key_point = self.current_start_point
         for side in nearest_obstacle.sides:
+            if side.side.check_point_on_line(key_point):
+                key_point = (side.side.start + side.side.end) / 2
+        nearest_sides = self.find_nearest_sides(key_point, nearest_obstacle)
+        # print("nearest_sides", nearest_sides)
+        for side in nearest_sides:
             # print("current_point", self.current_start_point)
             # print("corner_point", corner.corner)
             # print("corner_visited", corner.visited)
             side_line = side.side
-            # print(abs(nearest_intersection_point[0] - (side_line.start[0] + side_line.end[0]) / 2))
-            # print(abs(nearest_intersection_point[1] - (side_line.start[1] + side_line.end[1]) / 2))
-            # print(abs(nearest_intersection_point[2] - (side_line.start[2] + side_line.end[2]) / 2))
-            if (abs(nearest_intersection_point[0] - (side_line.start[0] + side_line.end[0]) / 2) < 1e-3 or
-                    abs(nearest_intersection_point[1] - (side_line.start[1] + side_line.end[1]) / 2) < 1e-3 or
-                    abs(nearest_intersection_point[2] - (side_line.start[2] + side_line.end[2]) / 2) < 1e-3):
-                point_on_line = side_line.min_point_on_line(nearest_intersection_point, self.goal_point)
+            point_on_line = side_line.min_point_on_line(self.current_start_point, self.goal_point)
+            # if not side.visited and (
+            #         abs(self.current_start_point[0] - (side_line.start[0] + side_line.end[0]) / 2) < 1e-3 or
+            #         abs(self.current_start_point[1] - (side_line.start[1] + side_line.end[1]) / 2) < 1e-3 or
+            #         abs(self.current_start_point[2] - (side_line.start[2] + side_line.end[2]) / 2) < 1e-3):
+            # if not side.visited and (
+            #         (abs(self.current_start_point[0] - point_on_line[0]) < 1e-3 and abs(
+            #             self.current_start_point[0] - side.side.start[0]) < 1e-3) or
+            #         (abs(self.current_start_point[1] - point_on_line[1]) < 1e-3 and abs(
+            #             self.current_start_point[1] - side.side.start[0]) < 1e-3) or
+            #         (abs(self.current_start_point[2] - point_on_line[2]) and abs(
+            #             self.current_start_point[2] - side.side.start[0]) < 1e-3) < 1e-3):
+            if not side.visited:
+                # point_on_line = side_line.min_point_on_line(nearest_intersection_point, self.goal_point)
                 if self.distance(nearest_intersection_point, point_on_line) + \
                         self.distance(point_on_line, self.goal_point) < cost_to_go:
                     nearest_point_on_line = point_on_line
                     distance_from_start_to_side = self.distance(self.current_start_point, point_on_line)
-                    cost_to_go = self.distance(nearest_intersection_point, point_on_line) + \
-                                 self.distance(point_on_line, self.goal_point)
+                    cost_to_go = self.distance(nearest_intersection_point, point_on_line)+ \
+                        self.distance(point_on_line, self.goal_point)
                     # print("corner", corner.corner)
                     # print("current_point", self.current_start_point)
                     # print("distance_from_start_to_corner", distance_from_start_to_corner)
@@ -482,10 +537,15 @@ class BugPlanner(object):
         cost_to_go = np.inf
         nearest_rect_side = None
         nearest_point_on_line = None
-
+        key_point = self.current_start_point
+        for side in nearest_obstacle.sides:
+            if side.side.check_point_on_line(key_point):
+                key_point = (side.side.start + side.side.end) / 2
+        nearest_sides = self.find_nearest_sides(key_point, nearest_obstacle)
+        # print("nearest_sides", nearest_sides)
         # print("\n=============================")
         # print("self.current_start_point", self.current_start_point)
-        for side in nearest_obstacle.sides:
+        for side in nearest_sides:
             # print("current_point", self.current_start_point)
             # print("corner_point", corner.corner)
             # print("corner_visited", corner.visited)
@@ -495,18 +555,23 @@ class BugPlanner(object):
             #         abs(self.current_start_point[0] - (side_line.start[0] + side_line.end[0]) / 2) < 1e-3 or
             #         abs(self.current_start_point[1] - (side_line.start[1] + side_line.end[1]) / 2) < 1e-3 or
             #         abs(self.current_start_point[2] - (side_line.start[2] + side_line.end[2]) / 2) < 1e-3):
-            if not side.visited and (
-                    abs(self.current_start_point[0] - point_on_line[0]) < 1e-3 or
-                    abs(self.current_start_point[1] - point_on_line[1]) < 1e-3 or
-                    abs(self.current_start_point[2] - point_on_line[2]) < 1e-3):
+            # if not side.visited and (
+            #         (abs(self.current_start_point[0] - point_on_line[0]) < 1e-3 and abs(
+            #             self.current_start_point[0] - side.side.start[0]) < 1e-3) or
+            #         (abs(self.current_start_point[1] - point_on_line[1]) < 1e-3 and abs(
+            #             self.current_start_point[1] - side.side.start[0]) < 1e-3) or
+            #         (abs(self.current_start_point[2] - point_on_line[2]) and abs(
+            #             self.current_start_point[2] - side.side.start[0]) < 1e-3) < 1e-3):
+            if not side.visited:
                 # point_on_line = side_line.min_point_on_line(nearest_intersection_point, self.goal_point)
                 if self.distance(self.current_start_point, point_on_line) + \
                         self.distance(point_on_line, self.goal_point) < cost_to_go:
+                    # if self.distance(self.current_start_point, point_on_line) < cost_to_go:
                     nearest_rect_side = side
                     nearest_point_on_line = point_on_line
                     distance_from_start_to_side = self.distance(self.current_start_point, point_on_line)
                     cost_to_go = self.distance(self.current_start_point, point_on_line) + \
-                                 self.distance(point_on_line, self.goal_point)
+                        self.distance(point_on_line, self.goal_point)
                     # print("corner", corner.corner)
                     # print("current_point", self.current_start_point)
                     # print("distance_from_start_to_corner", distance_from_start_to_corner)
@@ -567,7 +632,7 @@ class BugPlanner(object):
                 #         self.step_toward_intersection()
                 #     else:
                 #         self.step_toward_side()
-                        # print("============")
+                # print("============")
 
                 self.step_toward_intersection()
 
@@ -623,7 +688,7 @@ class BugPlanner(object):
     def plot_cubes(self, ax):
         for rect_i in self.inflated_rects[0: len(self.obstacle_list)]:
             # rect_i.plot_cube(ax, color='b', alpha=0.2)
-            rect_i.plot_cube(ax, color='b', alpha=0.02)
+            rect_i.plot_cube(ax, color='b', alpha=0.2)
 
             origin_center_i = [rect_i.center[0], rect_i.center[1], rect_i.center[2]]
             origin_length_i = rect_i.length - 2 * self.inflated_size
@@ -631,7 +696,7 @@ class BugPlanner(object):
             origin_height_i = rect_i.height - 2 * self.inflated_size
             origin_rect_i = Rectangular(origin_center_i, origin_length_i, origin_width_i, origin_height_i)
             # origin_rect_i.plot_cube(ax, color='b', alpha=0.5)
-            origin_rect_i.plot_cube(ax, color='b', alpha=0.05)
+            origin_rect_i.plot_cube(ax, color='b', alpha=0.1)
 
     def plot_path(self, ax):
         path_x = []
@@ -662,64 +727,54 @@ def obstacle_adapter(obstacle_list):
 
 
 if __name__ == '__main__':
-    obstacle_list = [[[105.8849055136752, 73.20809955725082, 166.96664600089466], 67.86044041487264, 67.86044041487264,
-                      67.86044041487264],
-                     [[187.91767983647176, 209.02743230183825, 100.88507001255368], 67.86044041487264,
-                      67.86044041487264, 67.86044041487264],
-                     [[71.14964594440696, 140.78990332076702, 44.385253734463355], 67.86044041487264, 67.86044041487264,
-                      67.86044041487264],
-                     [[142.5889892594447, 172.50267160595516, 201.7078075709872], 67.86044041487264, 67.86044041487264,
-                      67.86044041487264],
-                     [[66.61941370692782, 141.2473833095059, 189.56269023345536], 67.86044041487264, 67.86044041487264,
-                      67.86044041487264],
-                     [[185.4518502393892, 45.5005590249753, 93.34631490589716], 67.86044041487264, 67.86044041487264,
-                      67.86044041487264],
-                     [[179.72688339283945, 82.24126668014492, 175.96132457945072], 67.86044041487264, 67.86044041487264,
-                      67.86044041487264],
-                     [[91.38860770567672, 63.23891703718935, 60.943463007256334], 67.86044041487264, 67.86044041487264,
-                      67.86044041487264],
-                     [[168.11188435163862, 124.95232623427734, 43.20612523884877], 67.86044041487264, 67.86044041487264,
-                      67.86044041487264],
-                     [[109.91603147470089, 213.09357973510592, 116.4551904814625], 67.86044041487264, 67.86044041487264,
-                      67.86044041487264]]
-    obstacle_list = []
-    start_point = [98.76263315158776, 226.76493024717868, 232.5046649732856]
-    end_point = [79.8738467455632, 41.06370147581048, 220.00437099434905]
+    obstacle_list = [
+        [[226.36304091094354, 138.90891292852814, 106.24688218505116], 109.5950799853164, 109.5950799853164,
+         109.5950799853164],
+        [[76.11148341998056, 182.5666500035407, 93.12260013513023], 109.5950799853164, 109.5950799853164,
+         109.5950799853164],
+        [[97.61062131043039, 66.36957320029383, 229.27200008941338], 109.5950799853164, 109.5950799853164,
+         109.5950799853164],
+        [[226.1957283482435, 216.82028739507314, 234.7614512112258], 109.5950799853164, 109.5950799853164,
+         109.5950799853164]]
+    start_point = [200.9702970297029703, 0.0, 0.0]
+
+    end_point = [200.9702970297029703, 300.0, 300.0]
+
     agent_start = [start_point]
     agent_end = [end_point]
 
-    inflated_size = 0.032
-    step_size = 5.0
+    inflated_size = 6.5
+    step_size = 20.0
 
     # TODO： 写一个过滤障碍物的，  还没完成
-    obstacle_list = [
-        ob
-        for ob in obstacle_list
-        if (
-                np.all(np.array(ob[0]) - np.array(ob[1:]) / 2 < np.max([start_point, end_point], axis=0))
-                and
-                np.all(np.array(ob[0]) + np.array(ob[1:]) / 2 > np.min([start_point, end_point], axis=0))
-        )
-    ]
-    inflate_obs_min_max = [
-        (np.array(ob[0]) - np.array(ob[1:]) / 2 - inflated_size,
-         np.array(ob[0]) + np.array(ob[1:]) / 2 + inflated_size
-         )
-        for ob in obstacle_list
-    ]
-    for minp, maxp in inflate_obs_min_max:
-        if np.all(minp < start_point) and np.all(start_point < maxp):
-            print('start_point')
-            print(start_point)
-            print('minp,maxp')
-            print(minp)
-            print(maxp)
-        if np.all(minp < end_point) and np.all(end_point < maxp):
-            print('start_point')
-            print(end_point)
-            print('minp,maxp')
-            print(minp)
-            print(maxp)
+    # obstacle_list = [
+    #     ob
+    #     for ob in obstacle_list
+    #     if (
+    #             np.all(np.array(ob[0]) - np.array(ob[1:]) / 2 < np.max([start_point, end_point], axis=0))
+    #             and
+    #             np.all(np.array(ob[0]) + np.array(ob[1:]) / 2 > np.min([start_point, end_point], axis=0))
+    #     )
+    # ]
+    # inflate_obs_min_max = [
+    #     (np.array(ob[0]) - np.array(ob[1:]) / 2 - inflated_size,
+    #      np.array(ob[0]) + np.array(ob[1:]) / 2 + inflated_size
+    #      )
+    #     for ob in obstacle_list
+    # ]
+    # for minp, maxp in inflate_obs_min_max:
+    #     if np.all(minp < start_point) and np.all(start_point < maxp):
+    #         print('start_point')
+    #         print(start_point)
+    #         print('minp,maxp')
+    #         print(minp)
+    #         print(maxp)
+    #     if np.all(minp < end_point) and np.all(end_point < maxp):
+    #         print('start_point')
+    #         print(end_point)
+    #         print('minp,maxp')
+    #         print(minp)
+    #         print(maxp)
     # exit()
 
     fig = plt.figure()

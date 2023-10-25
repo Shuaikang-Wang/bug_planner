@@ -145,6 +145,7 @@ class BugPlanner(object):
         self.goal_point = goal_point
         self.step_size = step_size
         self.inflated_size = inflated_size
+
         self.obstacle_list = obstacle_list
         self.current_start_point = start_point
         self.path = [start_point]
@@ -155,8 +156,53 @@ class BugPlanner(object):
         self.nearest_rect_corner = None
         self.distance_from_start_to_corner = None
 
+        self.recalculate_inflated_size()
         self.initialize_obstacle()
         # print(self.obstacles)
+
+    def recalculate_inflated_size(self):
+        shortest_distance = np.inf
+        for rect in self.obstacle_list:
+            center_x, center_y = rect[0]
+            width = rect[1]
+            height = rect[2]
+            rect_half_width = width / 2
+            rect_half_height = height / 2
+            rect_left = center_x - rect_half_width
+            rect_right = center_x + rect_half_width
+            rect_top = center_y + rect_half_height
+            rect_bottom = center_y - rect_half_height
+            left_top = np.array([rect_left, rect_top])
+            left_bottom = np.array([rect_left, rect_bottom])
+            right_top = np.array([rect_right, rect_top])
+            right_bottom = np.array([rect_right, rect_bottom])
+            corners = [left_top,
+                       left_bottom,
+                       right_bottom,
+                       right_top]
+            for i in range(4):
+                x1, y1 = corners[i]
+                x2, y2 = corners[(i + 1) % 4]
+                dx = x2 - x1
+                dy = y2 - y1
+
+                vx = self.current_start_point[0] - x1
+                vy = self.current_start_point[1] - y1
+                distance = abs(vx * dy - vy * dx) / math.sqrt(dx ** 2 + dy ** 2)
+
+                dot_product = vx * dx + vy * dy
+                if 0 <= dot_product <= dx ** 2 + dy ** 2:
+                    pass
+                else:
+                    distance = min(
+                        math.sqrt((self.current_start_point[0] - x1) ** 2 + (self.current_start_point[1] - y1) ** 2),
+                        math.sqrt((self.current_start_point[0] - x2) ** 2 + (self.current_start_point[1] - y2) ** 2)
+                    )
+                if distance < shortest_distance:
+                    shortest_distance = distance
+        # print("shortest_distance", shortest_distance)
+        if shortest_distance < self.inflated_size:
+            self.inflated_size = 9 * shortest_distance / 10
 
     def initialize_obstacle(self):
         for obs_data_i in self.obstacle_list:
@@ -513,12 +559,13 @@ class BugPlanner(object):
             path_y.append(path_i[1])
         ax.plot(path_x, path_y, '-g', linewidth=1.5)
 
+
 def obstacle_adapter(obstacle_list):
     obstacle_list = [
         [
             [
-                ob[0]+ob[-1]/2,
-                ob[1]+ob[-1]/2
+                ob[0] + ob[-1] / 2,
+                ob[1] + ob[-1] / 2
             ],
             ob[-1],
             ob[-1]
@@ -531,20 +578,20 @@ if __name__ == '__main__':
     # obscacles
     # [center_x, center_y], width, height
     obstacle_list = [[199.9946259576258, 83.31695255290691, 54.232595826027215],
-     [8.774308555363069, 218.29587852506296, 54.232595826027215],
-     [98.31832193935307, 45.153090684989294, 54.232595826027215],
-     [101.87145895025849, 179.4797170664781, 54.232595826027215],
-     [217.71835981488442, 183.53196072220774, 54.232595826027215],
-     [12.848261121594538, 38.077922709815525, 54.232595826027215]]
+                     [8.774308555363069, 218.29587852506296, 54.232595826027215],
+                     [98.31832193935307, 45.153090684989294, 54.232595826027215],
+                     [101.87145895025849, 179.4797170664781, 54.232595826027215],
+                     [217.71835981488442, 183.53196072220774, 54.232595826027215],
+                     [12.848261121594538, 38.077922709815525, 54.232595826027215]]
 
-    agent_start = [[250.0, 0.0]]
+    agent_start = [[250.0, 80.0]]
 
     agent_end = [[250.0, 300.0]]
 
     obstacle_list = obstacle_adapter(obstacle_list)
 
     step_size = 100.0
-    inflated_size = 1
+    inflated_size = 10
 
     fig = plt.figure()
     ax = fig.add_subplot(111)

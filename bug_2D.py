@@ -192,27 +192,28 @@ class BugPlanner(object):
         intersections = []
 
         if start_x == end_x:
-            y_top = rect_top
-            y_bottom = rect_bottom
-            if start_y < end_y:
-                y_top = min(y_top, end_y)
-                y_bottom = max(y_bottom, start_y)
-            else:
-                y_top = min(y_top, start_y)
-                y_bottom = max(y_bottom, end_y)
+            if rect_left <= start_x <= rect_right:
+                y_top = rect_top
+                y_bottom = rect_bottom
+                if start_y < end_y:
+                    y_top = min(y_top, end_y)
+                    y_bottom = max(y_bottom, start_y)
+                else:
+                    y_top = min(y_top, start_y)
+                    y_bottom = max(y_bottom, end_y)
 
-            if y_bottom <= y_top:
-                new_intersection_point = np.array([start_x, y_bottom])
-                if not self.check_point_in_rect_corner(new_intersection_point, rect) and \
-                        line.check_point_between_line(new_intersection_point):
-                    new_intersection = Intersection(new_intersection_point, rect)
-                    intersections.append(new_intersection)
+                if y_bottom <= y_top:
+                    new_intersection_point = np.array([start_x, y_bottom])
+                    if not self.check_point_in_rect_corner(new_intersection_point, rect) and \
+                            line.check_point_between_line(new_intersection_point):
+                        new_intersection = Intersection(new_intersection_point, rect)
+                        intersections.append(new_intersection)
 
-                new_intersection_point = np.array([start_x, y_top])
-                if not self.check_point_in_rect_corner(new_intersection_point, rect) and \
-                        line.check_point_between_line(new_intersection_point):
-                    new_intersection = Intersection(new_intersection_point, rect)
-                    intersections.append(new_intersection)
+                    new_intersection_point = np.array([start_x, y_top])
+                    if not self.check_point_in_rect_corner(new_intersection_point, rect) and \
+                            line.check_point_between_line(new_intersection_point):
+                        new_intersection = Intersection(new_intersection_point, rect)
+                        intersections.append(new_intersection)
         else:
             slope = (end_y - start_y) / (end_x - start_x)
             intercept = start_y - slope * start_x
@@ -435,7 +436,7 @@ class BugPlanner(object):
 
                 line = Line(self.current_start_point, self.goal_point)
                 intersection, _ = self.line_rectangle_intersection(line, self.min_obstacle)
-                # print(intersection)
+                # print("intersections", _[0].point)
                 # print(_)
                 while intersection:
                     self.find_nearest_corner()
@@ -529,16 +530,21 @@ def obstacle_adapter(obstacle_list):
 if __name__ == '__main__':
     # obscacles
     # [center_x, center_y], width, height
-    obstacle_list = [[[150.55043997342133, 226.296966084244], 48.34659492268814, 48.34659492268814], [[213.00858564398823, 93.75685920774484], 48.34659492268814, 48.34659492268814], [[71.70408592537288, 71.80666360971782], 48.34659492268814, 48.34659492268814], [[67.7165244276707, 231.34467715210315], 48.34659492268814, 48.34659492268814], [[229.4870299629942, 214.53627468132373], 48.34659492268814, 48.34659492268814], [[73.35957252928269, 154.35793135786946], 48.34659492268814, 48.34659492268814]]
+    obstacle_list = [[199.9946259576258, 83.31695255290691, 54.232595826027215],
+     [8.774308555363069, 218.29587852506296, 54.232595826027215],
+     [98.31832193935307, 45.153090684989294, 54.232595826027215],
+     [101.87145895025849, 179.4797170664781, 54.232595826027215],
+     [217.71835981488442, 183.53196072220774, 54.232595826027215],
+     [12.848261121594538, 38.077922709815525, 54.232595826027215]]
 
-    obstacle_list = []
-    # obstacle_list = obstacle_adapter(obstacle_list)
+    agent_start = [[250.0, 0.0]]
 
-    agent_start = [[60.0, 0.0], [120.0, 0.0], [180.0, 0.0], [240.0, 0.0]]
-    agent_end = [[60.0, 300.0], [120.0, 300.0], [180.0, 300.0], [240.0, 300.0]]
+    agent_end = [[250.0, 300.0]]
 
-    step_size = 300.0
-    inflated_size = 11.7
+    obstacle_list = obstacle_adapter(obstacle_list)
+
+    step_size = 100.0
+    inflated_size = 1
 
     fig = plt.figure()
     ax = fig.add_subplot(111)

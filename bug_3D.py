@@ -4,6 +4,7 @@ import time
 import copy
 import matplotlib.pyplot as plt
 from scipy.optimize import minimize
+from collections import Counter
 
 
 class Intersection(object):
@@ -251,10 +252,19 @@ class BugPlanner(object):
 
     def find_nearest_sides(self, point, rectangular):
         distances = np.linalg.norm(rectangular.vertices - point, axis=1)
+        closest_indices = np.argsort(distances)[:3]
 
-        closest_indices = np.argsort(distances)[:4]
+        closest_vertices = [rectangular.vertices[i] for i in closest_indices[0:3]]
 
-        closest_vertices = [rectangular.vertices[i] for i in closest_indices[0:4]]
+        new_vertices = np.array([0.0, 0.0, 0.0])
+        for i in range(3):
+            coordinate_list = []
+            for j in range(3):
+                coordinate_list.append(closest_vertices[j][i])
+            counter_dict = Counter(coordinate_list)
+            min_key = min(counter_dict.items(), key=lambda x: x[1])[0]
+            new_vertices[i] = float(min_key)
+        closest_vertices.append(new_vertices)
 
         lines = []
         for i in range(0, len(closest_vertices)):
@@ -267,8 +277,6 @@ class BugPlanner(object):
                 # print("width", self.distance(rectangular.sides[0].side.start, rectangular.sides[0].side.end))
                 if abs(self.distance(closest_vertices[i], closest_vertices[j]) - self.distance(rectangular.sides[0].side.start, rectangular.sides[0].side.end)) < 1e-3:
                     lines.append(Line(closest_vertices[i], closest_vertices[j]))
-
-        # print("lines", lines)
 
         nearest_sides = []
 
@@ -538,10 +546,13 @@ class BugPlanner(object):
         nearest_rect_side = None
         nearest_point_on_line = None
         key_point = self.current_start_point
+        nearest_sides = []
         for side in nearest_obstacle.sides:
             if side.side.check_point_on_line(key_point):
                 key_point = (side.side.start + side.side.end) / 2
-        nearest_sides = self.find_nearest_sides(key_point, nearest_obstacle)
+            if side.side.distance_point_to_line(self.current_start_point) < nearest_obstacle.width:
+                nearest_sides.append(side)
+        # nearest_sides = self.find_nearest_sides(key_point, nearest_obstacle)
         # print("nearest_sides", nearest_sides)
         # print("\n=============================")
         # print("self.current_start_point", self.current_start_point)
@@ -658,12 +669,14 @@ class BugPlanner(object):
                         # print("intersection_points", _)
                         # print(self.current_start_point)
                     self.one_step_along_rect()
+                    # print("self.current_start_point", self.current_start_point)
                     line = Line(self.current_start_point, self.goal_point)
                     intersection, all_intersections = self.line_rectangle_intersection(line, self.min_obstacle)
                     if all_intersections is None:
                         num_intersection = 0
                     else:
                         num_intersection = len(all_intersections)
+                    # print("num_intersection", num_intersection)
         if self.distance(self.current_start_point, self.goal_point) <= self.step_size:
             self.path.append(self.goal_point)
         self.smooth_path()
@@ -727,24 +740,16 @@ def obstacle_adapter(obstacle_list):
 
 
 if __name__ == '__main__':
-    obstacle_list = [
-        [[226.36304091094354, 138.90891292852814, 106.24688218505116], 109.5950799853164, 109.5950799853164,
-         109.5950799853164],
-        [[76.11148341998056, 182.5666500035407, 93.12260013513023], 109.5950799853164, 109.5950799853164,
-         109.5950799853164],
-        [[97.61062131043039, 66.36957320029383, 229.27200008941338], 109.5950799853164, 109.5950799853164,
-         109.5950799853164],
-        [[226.1957283482435, 216.82028739507314, 234.7614512112258], 109.5950799853164, 109.5950799853164,
-         109.5950799853164]]
-    start_point = [200.9702970297029703, 0.0, 0.0]
+    obstacle_list = [[[207.32762452365995, 128.3358764671737, 85.42928973828238], 91.15823414694589, 91.15823414694589, 91.15823414694589], [[108.95665297749912, 100.44706527744762, 228.87335512589266], 91.15823414694589, 91.15823414694589, 91.15823414694589], [[159.71607601294562, 223.08066527743813, 231.59689435609744], 91.15823414694589, 91.15823414694589, 91.15823414694589], [[82.31189406648355, 100.00450587795879, 81.7361889658213], 91.15823414694589, 91.15823414694589, 91.15823414694589], [[69.3908329359129, 228.9170664214658, 100.43654216260485], 91.15823414694589, 91.15823414694589, 91.15823414694589], [[230.30389931971058, 81.54404346864304, 217.21892328086506], 91.15823414694589, 91.15823414694589, 91.15823414694589]]
 
-    end_point = [200.9702970297029703, 300.0, 300.0]
+    start_point = [237.26104457, 189.67840504, 165.34384167]
+    end_point = [50.4711589,  175.84363547, 269.79977355]
 
     agent_start = [start_point]
     agent_end = [end_point]
 
-    inflated_size = 6.5
-    step_size = 20.0
+    inflated_size = 13
+    step_size = 10.0
 
     # TODO： 写一个过滤障碍物的，  还没完成
     # obstacle_list = [
@@ -802,7 +807,7 @@ if __name__ == '__main__':
         print("bug planning time:", total_time)
         ax.plot(*start_point, 'r*')
         ax.plot(*end_point, 'go')
-        print(final_path)
+        # print(final_path)
     bug_planner = BugPlanner(start_point, end_point, step_size, inflated_size, obstacle_list)
     bug_planner.plot_cubes(ax)
 

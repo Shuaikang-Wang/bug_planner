@@ -155,13 +155,15 @@ class BugPlanner(object):
         self.min_obstacle = None
         self.nearest_rect_corner = None
         self.distance_from_start_to_corner = None
+        self.in_inflated_obs = 0
 
-        self.recalculate_inflated_size()
+        # self.recalculate_inflated_size()
         self.initialize_obstacle()
         # print(self.obstacles)
 
     def recalculate_inflated_size(self):
         shortest_distance = np.inf
+        normal_vector = np.array([])
         for rect in self.obstacle_list:
             center_x, center_y = rect[0]
             width = rect[1]
@@ -202,7 +204,7 @@ class BugPlanner(object):
                     shortest_distance = distance
         # print("shortest_distance", shortest_distance)
         if shortest_distance < self.inflated_size:
-            self.inflated_size = 9 * shortest_distance / 10
+            self.in_inflated_obs = 1
 
     def initialize_obstacle(self):
         for obs_data_i in self.obstacle_list:
@@ -460,7 +462,6 @@ class BugPlanner(object):
         # print("current_start_point====", self.current_start_point)
 
     def run(self):
-
         while self.distance(self.current_start_point, self.goal_point) > self.step_size:
             # print(self.path[-1])
             self.nearest_intersection()

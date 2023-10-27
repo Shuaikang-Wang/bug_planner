@@ -218,6 +218,26 @@ class Line(object):
 
         return distance
 
+    def distance_point_to_segment(self, point):
+        point = np.array(point)
+        segment_start = np.array(self.start)
+        segment_end = np.array(self.end)
+
+        segment_vector = segment_end - segment_start
+
+        vector_pa = point - segment_start
+
+        projection_length = np.dot(vector_pa, segment_vector) / np.dot(segment_vector, segment_vector)
+
+        if projection_length < 0:
+            distance = np.linalg.norm(point - segment_start)
+        elif projection_length > 1:
+            distance = np.linalg.norm(point - segment_end)
+        else:
+            closest_point = segment_start + projection_length * segment_vector
+            distance = np.linalg.norm(point - closest_point)
+        return distance
+
 
 class BugPlanner(object):
 
@@ -498,10 +518,13 @@ class BugPlanner(object):
         cost_to_go = np.inf
         nearest_point_on_line = None
         key_point = self.current_start_point
+        nearest_sides = []
         for side in nearest_obstacle.sides:
             if side.side.check_point_on_line(key_point):
                 key_point = (side.side.start + side.side.end) / 2
-        nearest_sides = self.find_nearest_sides(key_point, nearest_obstacle)
+            if side.side.distance_point_to_segment(self.current_start_point) < nearest_obstacle.width:
+                nearest_sides.append(side)
+        # nearest_sides = self.find_nearest_sides(key_point, nearest_obstacle)
         # print("nearest_sides", nearest_sides)
         for side in nearest_sides:
             # print("current_point", self.current_start_point)
@@ -550,9 +573,9 @@ class BugPlanner(object):
         for side in nearest_obstacle.sides:
             if side.side.check_point_on_line(key_point):
                 key_point = (side.side.start + side.side.end) / 2
-            if side.side.distance_point_to_line(self.current_start_point) < nearest_obstacle.width:
+            if side.side.distance_point_to_segment(self.current_start_point) < nearest_obstacle.width:
                 nearest_sides.append(side)
-        # nearest_sides = self.find_nearest_sides(key_point, nearest_obstacle)
+        nearest_four_sides = self.find_nearest_sides(key_point, nearest_obstacle)
         # print("nearest_sides", nearest_sides)
         # print("\n=============================")
         # print("self.current_start_point", self.current_start_point)
@@ -561,7 +584,20 @@ class BugPlanner(object):
             # print("corner_point", corner.corner)
             # print("corner_visited", corner.visited)
             side_line = side.side
-            point_on_line = side_line.min_point_on_line(self.current_start_point, self.goal_point)
+            in_four_side = False
+            for side_i in nearest_four_sides:
+                if (self.distance(side_i.side.start, side.side.start) < 1e-3 and
+                    self.distance(side_i.side.end, side.side.end) < 1e-3) or \
+                        (self.distance(side_i.side.start, side.side.end) < 1e-3 and
+                         self.distance(side_i.side.end, side.side.start) < 1e-3):
+                    in_four_side = True
+            if in_four_side:
+                point_on_line = side_line.min_point_on_line(self.current_start_point, self.goal_point)
+            else:
+                if self.distance(self.current_start_point, side.side.start) < self.distance(self.current_start_point, side.side.end):
+                    point_on_line = side.side.start
+                else:
+                    point_on_line = side.side.end
             # if not side.visited and (
             #         abs(self.current_start_point[0] - (side_line.start[0] + side_line.end[0]) / 2) < 1e-3 or
             #         abs(self.current_start_point[1] - (side_line.start[1] + side_line.end[1]) / 2) < 1e-3 or
@@ -740,16 +776,23 @@ def obstacle_adapter(obstacle_list):
 
 
 if __name__ == '__main__':
-    obstacle_list = [[[207.32762452365995, 128.3358764671737, 85.42928973828238], 91.15823414694589, 91.15823414694589, 91.15823414694589], [[108.95665297749912, 100.44706527744762, 228.87335512589266], 91.15823414694589, 91.15823414694589, 91.15823414694589], [[159.71607601294562, 223.08066527743813, 231.59689435609744], 91.15823414694589, 91.15823414694589, 91.15823414694589], [[82.31189406648355, 100.00450587795879, 81.7361889658213], 91.15823414694589, 91.15823414694589, 91.15823414694589], [[69.3908329359129, 228.9170664214658, 100.43654216260485], 91.15823414694589, 91.15823414694589, 91.15823414694589], [[230.30389931971058, 81.54404346864304, 217.21892328086506], 91.15823414694589, 91.15823414694589, 91.15823414694589]]
-
-    start_point = [237.26104457, 189.67840504, 165.34384167]
-    end_point = [50.4711589,  175.84363547, 269.79977355]
+    start_point = [233.57663495, 196.59987992, 294.04522024]
+    end_point = [112.61215414, 164.23679683, 99.99851962]
+    obstacle_list = [
+        [[80.18507549468276, 100.62406733540485, 189.77517597081743], 104.92898592423376, 104.92898592423376,
+         104.92898592423376],
+        [[224.9671915536454, 138.80500654245924, 79.22002001862431], 104.92898592423376, 104.92898592423376,
+         104.92898592423376],
+        [[227.15588622943395, 95.90332414781986, 212.6203029616174], 104.92898592423376, 104.92898592423376,
+         104.92898592423376],
+        [[224.4144814921989, 230.38891640941068, 224.558312552853], 104.92898592423376, 104.92898592423376,
+         104.92898592423376]]
 
     agent_start = [start_point]
     agent_end = [end_point]
 
     inflated_size = 13
-    step_size = 10.0
+    step_size = 0.1
 
     # TODO： 写一个过滤障碍物的，  还没完成
     # obstacle_list = [

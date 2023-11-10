@@ -524,6 +524,7 @@ class BugPlanner(object):
                 key_point = (side.side.start + side.side.end) / 2
             if side.side.distance_point_to_segment(self.current_start_point) < nearest_obstacle.width:
                 nearest_sides.append(side)
+        nearest_four_sides = self.find_nearest_sides(key_point, nearest_obstacle)
         # nearest_sides = self.find_nearest_sides(key_point, nearest_obstacle)
         # print("nearest_sides", nearest_sides)
         for side in nearest_sides:
@@ -531,7 +532,23 @@ class BugPlanner(object):
             # print("corner_point", corner.corner)
             # print("corner_visited", corner.visited)
             side_line = side.side
-            point_on_line = side_line.min_point_on_line(self.current_start_point, self.goal_point)
+            in_four_side = False
+            for side_i in nearest_four_sides:
+                if (self.distance(side_i.side.start, side.side.start) < 1e-3 and
+                    self.distance(side_i.side.end, side.side.end) < 1e-3) or \
+                        (self.distance(side_i.side.start, side.side.end) < 1e-3 and
+                         self.distance(side_i.side.end, side.side.start) < 1e-3):
+                    in_four_side = True
+            if in_four_side:
+                point_on_line = side_line.min_point_on_line(self.current_start_point, self.goal_point)
+            else:
+                if self.distance(self.current_start_point, side.side.start) < self.distance(self.current_start_point,
+                                                                                            side.side.end):
+                    point_on_line = side.side.start
+                else:
+                    point_on_line = side.side.end
+            # side_line = side.side
+            # point_on_line = side_line.min_point_on_line(self.current_start_point, self.goal_point)
             # if not side.visited and (
             #         abs(self.current_start_point[0] - (side_line.start[0] + side_line.end[0]) / 2) < 1e-3 or
             #         abs(self.current_start_point[1] - (side_line.start[1] + side_line.end[1]) / 2) < 1e-3 or
@@ -571,12 +588,13 @@ class BugPlanner(object):
         key_point = self.current_start_point
         nearest_sides = []
         for side in nearest_obstacle.sides:
-            if side.side.check_point_on_line(key_point):
-                key_point = (side.side.start + side.side.end) / 2
-            if side.side.distance_point_to_segment(self.current_start_point) < nearest_obstacle.width:
+            # if side.side.check_point_on_line(key_point):
+            #     key_point = (side.side.start + side.side.end) / 2
+            if side.side.distance_point_to_segment(self.current_start_point) <= nearest_obstacle.width:
                 nearest_sides.append(side)
         nearest_four_sides = self.find_nearest_sides(key_point, nearest_obstacle)
         # print("nearest_sides", nearest_sides)
+        # print("nearest_four_sides", nearest_four_sides)
         # print("\n=============================")
         # print("self.current_start_point", self.current_start_point)
         for side in nearest_sides:
@@ -591,13 +609,20 @@ class BugPlanner(object):
                         (self.distance(side_i.side.start, side.side.end) < 1e-3 and
                          self.distance(side_i.side.end, side.side.start) < 1e-3):
                     in_four_side = True
-            if in_four_side:
-                point_on_line = side_line.min_point_on_line(self.current_start_point, self.goal_point)
-            else:
-                if self.distance(self.current_start_point, side.side.start) < self.distance(self.current_start_point, side.side.end):
-                    point_on_line = side.side.start
+            if len(nearest_sides) < 3:
+                if in_four_side:
+                    point_on_line = side_line.min_point_on_line(self.current_start_point, self.goal_point)
                 else:
+                    if self.distance(self.current_start_point, side.side.start) < self.distance(self.current_start_point, side.side.end):
+                        point_on_line = side.side.start
+                    else:
+                        point_on_line = side.side.end
+            else:
+                if self.distance(self.current_start_point, side.side.start) < self.distance(self.current_start_point,
+                                                                                            side.side.end):
                     point_on_line = side.side.end
+                else:
+                    point_on_line = side.side.start
             # if not side.visited and (
             #         abs(self.current_start_point[0] - (side_line.start[0] + side_line.end[0]) / 2) < 1e-3 or
             #         abs(self.current_start_point[1] - (side_line.start[1] + side_line.end[1]) / 2) < 1e-3 or
@@ -776,22 +801,73 @@ def obstacle_adapter(obstacle_list):
 
 
 if __name__ == '__main__':
-    start_point = [233.57663495, 196.59987992, 294.04522024]
-    end_point = [112.61215414, 164.23679683, 99.99851962]
-    obstacle_list = [
-        [[80.18507549468276, 100.62406733540485, 189.77517597081743], 104.92898592423376, 104.92898592423376,
-         104.92898592423376],
-        [[224.9671915536454, 138.80500654245924, 79.22002001862431], 104.92898592423376, 104.92898592423376,
-         104.92898592423376],
-        [[227.15588622943395, 95.90332414781986, 212.6203029616174], 104.92898592423376, 104.92898592423376,
-         104.92898592423376],
-        [[224.4144814921989, 230.38891640941068, 224.558312552853], 104.92898592423376, 104.92898592423376,
-         104.92898592423376]]
+    start_point = [105.45080204,  8.48157129,  30.31802048]
+    end_point = [194.39137279, 298.8638745,  235.36559926]
+    obstacle_list = [[[108.9578715568053, 111.36230803718173, 139.77799052597345], 31.90924807941409, 31.90924807941409,
+                     31.90924807941409],
+                    [[237.24564347361954, 105.15959792325047, 66.70535691676766], 31.90924807941409, 31.90924807941409,
+                     31.90924807941409],
+                    [[222.4531339123253, 27.421201860204196, 258.7317455036134], 31.90924807941409, 31.90924807941409,
+                     31.90924807941409],
+                    [[130.6301457767563, 75.04929864654594, 45.68311222209553], 31.90924807941409, 31.90924807941409,
+                     31.90924807941409],
+                    [[134.39917113517026, 137.61684465137108, 228.05238866355], 31.90924807941409, 31.90924807941409,
+                     31.90924807941409],
+                    [[55.068592047571414, 76.9118054832392, 162.10847867939813], 31.90924807941409, 31.90924807941409,
+                     31.90924807941409],
+                    [[248.58121322734746, 76.9418873366152, 203.9284559814007], 31.90924807941409, 31.90924807941409,
+                     31.90924807941409],
+                    [[226.64594115327654, 28.721782483898608, 46.69193862590336], 31.90924807941409, 31.90924807941409,
+                     31.90924807941409],
+                    [[262.5931123448998, 147.34293119764308, 265.5782996971313], 31.90924807941409, 31.90924807941409,
+                     31.90924807941409],
+                    [[44.42069263158177, 59.1555278675895, 230.87829750729784], 31.90924807941409, 31.90924807941409,
+                     31.90924807941409],
+                    [[230.71892931992488, 259.28124888829973, 241.3381816402738], 31.90924807941409, 31.90924807941409,
+                     31.90924807941409],
+                    [[132.86495524144902, 270.68695918990704, 127.97857202985669], 31.90924807941409, 31.90924807941409,
+                     31.90924807941409],
+                    [[198.44865563805018, 153.39720374221355, 234.45698663166016], 31.90924807941409, 31.90924807941409,
+                     31.90924807941409],
+                    [[22.803540455047987, 140.47817583185082, 250.9745821037497], 31.90924807941409, 31.90924807941409,
+                     31.90924807941409],
+                    [[259.54452593136904, 227.66819907094154, 188.88474490856157], 31.90924807941409, 31.90924807941409,
+                     31.90924807941409],
+                    [[244.0550245527349, 23.51508214656985, 97.55263229416823], 31.90924807941409, 31.90924807941409,
+                     31.90924807941409],
+                    [[199.8016814233693, 21.870241926845047, 122.26564188261916], 31.90924807941409, 31.90924807941409,
+                     31.90924807941409],
+                    [[159.91026036848592, 150.5056147229684, 136.3363166049341], 31.90924807941409, 31.90924807941409,
+                     31.90924807941409],
+                    [[155.40409909355986, 36.035731833186844, 114.97260132385247], 31.90924807941409, 31.90924807941409,
+                     31.90924807941409],
+                    [[62.04243556239335, 120.06084441884889, 252.20043736997343], 31.90924807941409, 31.90924807941409,
+                     31.90924807941409],
+                    [[110.12967213129579, 205.77516612944245, 141.23827156128726], 31.90924807941409, 31.90924807941409,
+                     31.90924807941409],
+                    [[279.12041027371674, 31.22156857619196, 276.6596983467207], 31.90924807941409, 31.90924807941409,
+                     31.90924807941409],
+                    [[208.857034537264, 239.40781633856244, 34.98838466518416], 31.90924807941409, 31.90924807941409,
+                     31.90924807941409],
+                    [[200.56258867996038, 213.94394710116546, 112.76955659888426], 31.90924807941409, 31.90924807941409,
+                     31.90924807941409],
+                    [[94.21649535907356, 202.37006102175937, 261.99941957564727], 31.90924807941409, 31.90924807941409,
+                     31.90924807941409],
+                    [[28.296381254616584, 75.72565852160015, 102.3313195258969], 31.90924807941409, 31.90924807941409,
+                     31.90924807941409],
+                    [[121.51994874671736, 237.47646702029894, 46.10010079426506], 31.90924807941409, 31.90924807941409,
+                     31.90924807941409],
+                    [[126.12591400761222, 72.2705404741565, 186.72525375048707], 31.90924807941409, 31.90924807941409,
+                     31.90924807941409],
+                    [[267.3487177156007, 239.2091099115606, 85.78774442743811], 31.90924807941409, 31.90924807941409,
+                     31.90924807941409],
+                    [[71.35049596354504, 263.63457793829787, 202.16406289898003], 31.90924807941409, 31.90924807941409,
+                     31.90924807941409]]
 
     agent_start = [start_point]
     agent_end = [end_point]
 
-    inflated_size = 13
+    inflated_size = 2.0
     step_size = 0.1
 
     # TODO： 写一个过滤障碍物的，  还没完成
